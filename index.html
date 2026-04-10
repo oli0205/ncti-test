@@ -26,6 +26,14 @@
         transition: 0.2s; text-align: left; font-size: 15px; border: 1px solid transparent;
     }
     .option:hover { background: #c8e6c9; border-color: #4caf50; }
+    
+    /* 返回按钮样式 */
+    .back-btn {
+        display: inline-block; margin-top: 20px; color: #888;
+        font-size: 14px; cursor: pointer; text-decoration: underline;
+    }
+    .back-btn:hover { color: #2e7d32; }
+
     button { background: #4caf50; color: white; border: none; padding: 12px 30px; border-radius: 10px; cursor: pointer; font-size: 16px; margin-top: 20px; }
     .hidden { display:none; }
     .match-score { font-size: 40px; color: #2e7d32; font-weight: bold; margin: 10px 0; }
@@ -46,6 +54,7 @@
     <div class="progress-box"><div class="progress-bar" id="progressBar"></div></div>
     <div class="question-text" id="question"></div>
     <div id="options"></div>
+    <div id="backAction" class="back-btn" onclick="goBack()">返回上一题</div>
 </div>
 
 <div class="container hidden" id="result">
@@ -58,29 +67,26 @@
 </div>
 
 <script>
+// 问题数据保持不变
 const questions = [
-    // EI 维度 (6题)
     { q: "周末休息，成员提议去热闹的聚会，你会：", dim: "EI", ops: ["太棒了！我要当舞池中央最亮的仔", "去玩玩也不错，人多热闹挺有劲的", "不太想去，但如果是大家一起就陪着去", "只想把手机关机，在被窝里躺一天"] },
     { q: "在候机室遇到不认识的艺人前辈，你的表现是：", dim: "EI", ops: ["主动上前打招呼问候，顺便聊两句", "礼貌问候后，能自然地保持简单寒暄", "点头示意后迅速找个位置坐下不说话", "低头玩手机，祈祷对方千万别看过来"] },
     { q: "录制新团综时，需要你一个人去街头完成任务：", dim: "EI", ops: ["完全不虚，甚至觉得和路人聊天很有趣", "有点小挑战，但能顺利完成互动", "内心很抗拒，需要心理建设很久才敢开口", "社恐爆发，这简直是我的职业生涯危机"] },
     { q: "当你在宿舍感到压力很大时，你更倾向于：", dim: "EI", ops: ["找成员们吐槽聊天，说出来就好了", "给家里人打个电话，听听熟悉的声音", "听着歌自己在阳台待一会儿", "躲进房间拉上窗帘，谁也别来烦我"] },
     { q: "新入职的工作人员向你打招呼，你会：", dim: "EI", ops: ["热情回应并主动自我介绍", "温和地微笑点头并问好", "礼貌性地回应后继续做自己的事", "只是羞涩地笑笑，不知道该说什么"] },
     { q: "在签售会上面对热情的粉丝，你的状态通常是：", dim: "EI", ops: ["比粉丝还兴奋，各种抛梗停不下来", "状态在线，能接住每一位粉丝的话", "认真倾听粉丝说话，话不算多但真诚", "有点害羞，更擅长用眼神或手势表达爱意"] },
-    // TF 维度 (6题)
     { q: "练习舞蹈时，队友一直卡不准某个点，你会：", dim: "TF", ops: ["直接指出具体错在哪，要求重来一遍", "帮他数拍子，分析技术细节怎么改进", "先夸他这段跳得不错，再委婉提建议", "安慰他别急，大家陪着你一起慢慢练"] },
     { q: "朋友遇到伤心事来找你哭诉，你的第一反应是：", dim: "TF", ops: ["帮他分析这件事是谁的错，怎么解决", "客观评价整件事，给出理性的避坑建议", "先抱抱他，告诉他你会一直支持他", "跟着他一起难过，甚至比他哭得还大声"] },
     { q: "在评价一支新歌的 Demo 时，你更关注：", dim: "TF", ops: ["编曲的逻辑性、乐器配置是否高级", "旋律是否符合大众审美和市场逻辑", "这首歌传达的情绪是否能打动人心", "这首歌背后的故事感和给人的触动"] },
     { q: "如果要辞退一个虽然很努力但能力不足的员工，你会：", dim: "TF", ops: ["按规章办事，客观罗列数据说明原因", "温和但坚定地告知决定，给予职业建议", "内心非常纠结，会帮他找下一份工作", "完全说不出口，甚至想再给他一次机会"] },
     { q: "面对网络上的负面评价，你的心态是：", dim: "TF", ops: ["分析建议是否有道理，没道理的直接无视", "理智看待，觉得这是职业不可避免的一部分", "心情会受影响，需要成员们的开导", "会难过很久，反复想自己是不是真的很差"] },
     { q: "你认为什么样的人更值得尊重：", dim: "TF", ops: ["冷静客观、在关键时刻能拿主意的人", "专业度高、处事公正不偏私的人", "善良体贴、时刻能照顾到别人情绪的人", "感性细腻、拥有丰富情感与灵魂的人"] },
-    // JP 维度 (6题)
     { q: "关于明天的行程，你的行李准备情况是：", dim: "JP", ops: ["早就按清单装好了，连穿什么都搭配好了", "已经装了大半，睡前能全部搞定", "还没开始，打算明天起床前随便塞塞", "到了机场发现忘带护照是我的常规操作"] },
     { q: "在团队讨论回归计划时，你最希望：", dim: "JP", ops: ["每一步都有明确的时间表和执行计划", "整体方向明确，细节可以边走边看", "不要定死，留出给灵感爆发的空间", "随心欲，根据当天的状态来定"] },
     { q: "你的书桌或床头柜通常是：", dim: "JP", ops: ["井井有条，东西必须放在固定的位置", "虽然不算一尘不染，但看起来还算整洁", "有点乱，但我能在一堆东西里找到我要的", "灾难现场，经常找不到自己的袜子在哪"] },
     { q: "对于“说走就走的旅行”，你的态度是：", dim: "JP", ops: ["完全拒绝，没攻略的旅行简直是受罪", "可以去，但至少得把酒店先订好", "非常向往，这种未知感才叫冒险", "这就是我的生活方式，明天见！"] },
     { q: "面对截止日期（Deadline），你的状态是：", dim: "JP", ops: ["提前好几天做完，然后反复检查修改", "按部就班推进，踩着点保质保量完成", "前期一直在摸鱼，最后一天开始冲刺", "不到最后一秒，我的大脑拒绝开机工作"] },
     { q: "如果你的行程计划被突发状况打乱了，你会：", dim: "JP", ops: ["非常焦躁，感觉整个人都要抓狂了", "有点不爽，但会立刻寻找替代方案", "无所谓，计划赶不上变化嘛，挺有趣的", "正好不用去了，躺平万岁"] },
-    // XR 维度 (6题)
     { q: "在宿舍分配房间或家务时，你会：", dim: "XR", ops: ["主动站出来主持分配，确保公平高效", "表达自己的想法，争取自己想要的权利", "听大家的意见，随便怎么分配我都能接受", "总是把好的让给别人，自己拿剩下的部分"] },
     { q: "当团队氛围陷入尴尬的冷场时，你会：", dim: "XR", ops: ["主动讲笑话或者找话题，一定要热场", "尝试开启一个大家都能参与的话题", "观察大家的反应，等别人先开口", "默默低头，只要我不尴尬，尴尬的就是别人"] },
     { q: "在舞台表演中，你对 C 位（中心位）的想法是：", dim: "XR", ops: ["我会主动争取，我觉得我有能力胜任", "顺其自然，给到我的部分我一定会练好", "比起 C 位，我更喜欢在旁边做辅助工作", "我更倾向于在角落，这样压力会小很多"] },
@@ -89,8 +95,8 @@ const questions = [
     { q: "当别人对你的建议表示反对时，你会：", dim: "XR", ops: ["据理力争，一定要用逻辑说服对方", "解释自己的初衷，尝试达成一种折中", "如果对方坚持，那我就按对方的来", "立刻道歉，觉得是不是自己说错话了"] }
 ];
 
+// 成员数据保持不变
 const members = [
-    // NCT 127 (不包含 Mark)
     { name: "🐱 Johnny", traits: { EI: 0.9, TF: 0.8, JP: 0.4, XR: 0.65 }, desc: "自信幽默的社交达人，掌控全场的气场。" },
     { name: "🌹 Taeyong", traits: { EI: 0.6, TF: 0.3, JP: 0.9, XR: 0.8 }, desc: "感性且极致努力的领导者，内心柔软但做事严谨。" },
     { name: "🍒 Yuta", traits: { EI: 0.55, TF: 0.6, JP: 0.3, XR: 0.8 }, desc: "直率热烈的行动派，有着独特的个人世界观。" },
@@ -98,23 +104,17 @@ const members = [
     { name: "🍑 Jaehyun", traits: { EI: 0.4, TF: 0.7, JP: 0.5, XR: 0.5 }, desc: "优雅且沉稳，平衡感极佳，冷静中透着理性。" },
     { name: "🐶 Jungwoo", traits: { EI: 0.65, TF: 0.35, JP: 0.65, XR: 0.4 }, desc: "共情能力超强的氛围制造者，敏感又可爱的存在。" },
     { name: "🐻 Haechan", traits: { EI: 0.9, TF: 0.7, JP: 0.3, XR: 0.8 }, desc: "大脑转速极快的机智派，社交场上的绝对主角。" },
-
-    // NCT DREAM (不包含 Mark)
     { name: "🦊 Renjun", traits: { EI: 0.4, TF: 0.5, JP: 0.6, XR: 0.6 }, desc: "细腻且清醒，在规则与自由间寻找平衡。" },
     { name: "🐶 Jeno", traits: { EI: 0.3, TF: 0.75, JP: 0.5, XR: 0.5 }, desc: "温和冷静的稳定器，有着可靠的逻辑感。" },
     { name: "🐰 Jaemin", traits: { EI: 0.3, TF: 0.6, JP: 0.8, XR: 0.75 }, desc: "拥有独特边界感的自由灵魂，爱与理智并存。" },
     { name: "🐬 Chenle", traits: { EI: 0.8, TF: 0.8, JP: 0.7, XR: 0.7 }, desc: "通透且自信，逻辑思维极强，活得非常自在。" },
     { name: "🐹 Jisung", traits: { EI: 0.1, TF: 0.2, JP: 0.3, XR: 0.4 }, desc: "含蓄的观察者，内心世界丰富且一直在成长。" },
-
-    // WayV
     { name: "🐻 Kun", traits: { EI: 0.5, TF: 0.8, JP: 0.9, XR: 0.8 }, desc: "全能靠谱的家长级人物，条理清晰，执行力满分。" },
-    { name: "🐱 Ten", traits: { EI: 0.4, TF: 0.4, JP: 0.5, XR: 0.8 }, desc: "自由不羁的艺术家，追求极致的自我表达。" },
+    { name: "🐱 Ten", traits: { EI: 0.6, TF: 0.4, JP: 0.5, XR: 0.8 }, desc: "自由不羁的艺术家，追求极致的自我表达。" },
     { name: "🐥 Winwin", traits: { EI: 0.2, TF: 0.4, JP: 0.4, XR: 0.3 }, desc: "低调内敛，拥有强大的内心平衡力。" },
     { name: "🦕 Xiaojun", traits: { EI: 0.8, TF: 0.2, JP: 0.3, XR: 0.5 }, desc: "感性真挚，情感表达丰富，深情的完美主义者。" },
     { name: "🦄 Hendery", traits: { EI: 0.7, TF: 0.6, JP: 0.3, XR: 0.6 }, desc: "脑洞大开的快乐源泉，思维跳跃且心态豁达。" },
     { name: "🐑 Yangyang", traits: { EI: 0.4, TF: 0.65, JP: 0.55, XR: 0.7 }, desc: "机灵充满活力的冒险者，沟通直接且极具逻辑。" },
-
-    // NCT WISH
     { name: "🌷 Sion", traits: { EI: 0.3, TF: 0.8, JP: 0.85, XR: 0.7 }, desc: "（ITJX）沉稳可靠的队长，有着清晰逻辑与责任感。" },
     { name: "🐿️ Riku", traits: { EI: 0.25, TF: 0.3, JP: 0.5, XR: 0.3 }, desc: "（IFPR）内敛感性的自由灵魂，在安静中闪烁光芒。" },
     { name: "⭐️ Yushi", traits: { EI: 0.25, TF: 0.4, JP: 0.8, XR: 0.6 }, desc: "（IFJR）细腻专注的完美主义者，有着自己的坚持。" },
@@ -142,6 +142,13 @@ function showQuestion() {
     });
     document.getElementById("options").innerHTML = html;
     document.getElementById("progressBar").style.width = (index / questions.length * 100) + "%";
+    
+    // 如果是第一题，隐藏“后退”按钮
+    if (index === 0) {
+        document.getElementById("backAction").style.visibility = "hidden";
+    } else {
+        document.getElementById("backAction").style.visibility = "visible";
+    }
 }
 
 function answer(dim, weight) {
@@ -151,6 +158,16 @@ function answer(dim, weight) {
         showQuestion();
     } else {
         showResult();
+    }
+}
+
+// 核心功能：返回上一题
+function goBack() {
+    if (index > 0) {
+        index--; // 索引减一
+        let q = questions[index];
+        scores[q.dim].pop(); // 移除上一次该维度的最后一条得分记录
+        showQuestion(); // 重新渲染界面
     }
 }
 
