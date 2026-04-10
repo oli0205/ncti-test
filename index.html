@@ -2,109 +2,106 @@
 <html lang="zh">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NCTI 深度人格测试</title>
+<title>NCTI人格测试 - 深度匹配版</title>
 <style>
     body {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        background: linear-gradient(135deg, #e6f4ea, #c8e6c9);
+        background: linear-gradient(135deg, #f0f9ff, #e6fffa);
         margin: 0; padding: 0; text-align: center; color: #333;
     }
     .container {
-        max-width: 650px; margin: 40px auto; background: white;
-        padding: 35px; border-radius: 20px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        max-width: 600px; margin: 40px auto; background: white;
+        padding: 30px; border-radius: 24px;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.08);
     }
-    h1 { color: #2e7d32; margin-bottom: 10px; }
-    .heart-icon { font-size: 30px; margin: 10px 0; display: block; }
-    
-    /* 进度条 */
-    .progress-box { height: 6px; background: #eee; border-radius: 3px; margin: 20px 0; overflow: hidden; }
+    h1 { color: #2d6a4f; margin-bottom: 10px; }
+    .progress-box { height: 8px; background: #eee; border-radius: 4px; margin: 20px 0; overflow: hidden; }
     .progress-bar { height: 100%; background: #4caf50; width: 0%; transition: 0.3s; }
-
-    .question-text { font-size: 18px; font-weight: bold; margin-bottom: 20px; color: #2e7d32; text-align: left; line-height: 1.5; }
-    .option {
-        display: block; margin: 10px 0; padding: 15px;
-        background: #f1f8e9; border-radius: 12px; cursor: pointer;
-        transition: 0.2s; text-align: left; font-size: 15px; border: 1px solid transparent;
-    }
-    .option:hover { background: #c8e6c9; border-color: #4caf50; }
-
     button {
-        background: #4caf50; color: white; border: none;
-        padding: 12px 30px; border-radius: 10px; cursor: pointer;
-        font-size: 16px; margin-top: 20px;
+        background: #2d6a4f; color: white; border: none;
+        padding: 15px 40px; border-radius: 30px; cursor: pointer;
+        font-size: 16px; transition: 0.2s;
     }
-
+    button:hover { transform: scale(1.05); background: #1b4332; }
+    .option {
+        display: block; margin: 15px 0; padding: 18px;
+        background: #f8fdf9; border: 2px solid #eef7ee;
+        border-radius: 15px; cursor: pointer; transition: 0.2s;
+    }
+    .option:hover { border-color: #4caf50; background: #f1f8e9; }
     .hidden { display:none; }
-
-    /* 结果样式 */
-    .match-score { font-size: 40px; color: #2e7d32; font-weight: bold; margin: 10px 0; }
-    .member-name { font-size: 24px; color: #1b4332; margin-bottom: 15px; }
-    .member-desc { font-size: 15px; color: #666; line-height: 1.6; background: #f9f9f9; padding: 15px; border-radius: 10px; }
+    .dimension-result {
+        display: flex; justify-content: space-around; margin: 20px 0;
+        font-size: 14px; color: #666;
+    }
+    .match-score { font-size: 40px; color: #2d6a4f; font-weight: bold; margin: 10px 0; }
+    .member-name { font-size: 24px; color: #1b4332; margin-bottom: 20px; }
 </style>
 </head>
 
 <body>
 
 <div class="container" id="cover">
-    <h1>🌿 NCTI人格测试</h1>
-    <span class="heart-icon">💚</span>
-    <p>测测你最像哪位NCT成员</p>
+    <h1>🌿 NCTI 人格测试</h1>
+    <p>基于百分制匹配算法，寻找你的本命成员</p>
     <button onclick="startTest()">开始测试</button>
 </div>
 
 <div class="container hidden" id="quiz">
     <div class="progress-box"><div class="progress-bar" id="progressBar"></div></div>
-    <div class="question-text" id="question"></div>
+    <h2 id="question"></h2>
     <div id="options"></div>
 </div>
 
 <div class="container hidden" id="result">
     <h2>匹配结果</h2>
-    <div class="match-score" id="matchScore">0%</div>
-    <div class="member-name" id="resultName"></div>
-    <div class="member-desc" id="resultDesc"></div>
-    <div id="dimensionDetail" style="margin-top:20px; font-size: 13px; color: #888;"></div>
-    <button onclick="location.reload()">再测一次</button>
+    <div class="match-score" id="matchScore">98%</div>
+    <div class="member-name" id="resultText"></div>
+    <hr>
+    <p>你的维度画像：</p>
+    <div id="dimensionDetail"></div>
+    <button onclick="location.reload()" style="margin-top:20px">再测一次</button>
 </div>
 
 <script>
-// 权重分配：A:1.0 (极前), B:0.7 (偏前), C:0.3 (偏后), D:0.0 (极后)
+// 题目数据保持不变
 const questions = [
-    // EI 维度 (6题)
-    { q: "周末好不容易休息，成员提议去蹦迪/热闹的聚会，你会：", dim: "EI", ops: ["太棒了！我要当舞池中央最亮的仔", "去玩玩也不错，人多热闹挺有劲的", "不太想去，但如果是大家一起就陪着去", "只想把手机关机，在被窝里躺一天"] },
-    { q: "在候机室遇到不认识的艺人前辈，你的表现是：", dim: "EI", ops: ["主动上前打招呼问候，顺便聊两句", "礼貌问候后，能自然地保持简单寒暄", "点头示意后迅速找个位置坐下不说话", "低头玩手机，祈祷对方千万别看过来"] },
-    { q: "录制新团综时，需要你一个人去街头完成任务：", dim: "EI", ops: ["完全不虚，甚至觉得和路人聊天很有趣", "有点小挑战，但能顺利完成互动", "内心很抗拒，需要心理建设很久才敢开口", "社恐爆发，这简直是我的职业生涯危机"] },
-    { q: "当你在宿舍感到压力很大时，你更倾向于：", dim: "EI", ops: ["找成员们吐槽聊天，说出来就好了", "给家里人打个电话，听听熟悉的声音", "听着歌自己在阳台待一会儿", "躲进房间拉上窗帘，谁也别来烦我"] },
-    { q: "新入职的工作人员向你打招呼，你会：", dim: "EI", ops: ["热情回应并主动自我介绍", "温和地微笑点头并问好", "礼貌性地回应后继续做自己的事", "只是羞涩地笑笑，不知道该说什么"] },
-    { q: "在签售会上面对热情的粉丝，你的状态通常是：", dim: "EI", ops: ["比粉丝还兴奋，各种抛梗停不下来", "状态在线，能接住每一位粉丝的话", "认真倾听粉丝说话，话不算多但真诚", "有点害羞，更擅长用眼神或手势表达爱意"] },
+    ["在陌生聚会中，你会？","主动聊天","先观察"], // E/I
+    ["冷场时你会？","主动活跃气氛","等待别人"],
+    ["社交后你感觉？","更有能量","需要独处"],
+    ["你更倾向于？","表达自我","倾听他人"],
+    ["遇到新朋友？","很快熟络","需要时间"],
+    ["在群体中？","中心位置","边缘安静"],
+    ["更像？","外向","内向"],
+    
+    ["做决定时更依赖？","逻辑","感觉"], // T/F
+    ["朋友难过你会？","分析原因给建议","感同身受给安慰"],
+    ["你更看重？","事情的合理性","人的舒适感"],
+    ["表达情绪？","直接表达事实","内敛含蓄委婉"],
+    ["被误解时？","理性解释","沉默或难过"],
+    ["更喜欢？","真诚的批评","温柔的鼓励"],
+    ["做决定？","理性导向","感性导向"],
 
-    // TF 维度 (6题)
-    { q: "练习舞蹈时，队友一直卡不准某个点，你会：", dim: "TF", ops: ["直接指出具体错在哪，要求重来一遍", "帮他数拍子，分析技术细节怎么改进", "先夸他这段跳得不错，再委婉提建议", "安慰他别急，大家陪着你一起慢慢练"] },
-    { q: "朋友遇到伤心事来找你哭诉，你的第一反应是：", dim: "TF", ops: ["帮他分析这件事是谁的错，怎么解决", "客观评价整件事，给出理性的避坑建议", "先抱抱他，告诉他你会一直支持他", "跟着他一起难过，甚至比他哭得还大声"] },
-    { q: "在评价一支新歌的 Demo 时，你更关注：", dim: "TF", ops: ["编曲的逻辑性、乐器配置是否高级", "旋律是否符合大众审美和市场逻辑", "这首歌传达的情绪是否能打动人心", "这首歌背后的故事感和给人的触动"] },
-    { q: "如果要辞退一个虽然很努力但能力不足的员工，你会：", dim: "TF", ops: ["按规章办事，客观罗列数据说明原因", "温和但坚定地告知决定，给予职业建议", "内心非常纠结，会帮他找下一份工作", "完全说不出口，甚至想再给他一次机会"] },
-    { q: "面对网络上的负面评价，你的心态是：", dim: "TF", ops: ["分析建议是否有道理，没道理的直接无视", "理智看待，觉得这是职业不可避免的一部分", "心情会受影响，需要成员们的开导", "会难过很久，反复想自己是不是真的很差"] },
-    { q: "你认为什么样的人更值得尊重：", dim: "TF", ops: ["冷静客观、在关键时刻能拿主意的人", "专业度高、处事公正不偏私的人", "善良体贴、时刻能照顾到别人情绪的人", "感性细腻、拥有丰富情感与灵魂的人"] },
+    ["工作学习习惯？","提前做计划","随缘灵感驱动"], // J/P
+    ["面对突发变化？","感到不适","感到兴奋"],
+    ["时间管理？","严格遵守时间","灵活自由安排"],
+    ["你的房间？","整洁有序","乱中有序"],
+    ["旅行前？","必做攻略","说走就走"],
+    ["任务截止前？","尽早完成","死线冲刺"],
+    ["生活方式？","有规律","随性"],
 
-    // JP 维度 (6题)
-    { q: "关于明天的行程，你的行李准备情况是：", dim: "JP", ops: ["早就按清单装好了，连穿什么都搭配好了", "已经装了大半，睡前能全部搞定", "还没开始，打算明天起床前随便塞塞", "到了机场发现忘带护照是我的常规操作"] },
-    { q: "在团队讨论回归计划时，你最希望：", dim: "JP", ops: ["每一步都有明确的时间表和执行计划", "整体方向明确，细节可以边走边看", "不要定死，留出给灵感爆发的空间", "随心所欲，根据当天的状态来定"] },
-    { q: "你的书桌或床头柜通常是：", dim: "JP", ops: ["井井有条，东西必须放在固定的位置", "虽然不算一尘不染，但看起来还算整洁", "有点乱，但我能在一堆东西里找到我要的", "灾难现场，经常找不到自己的袜子在哪"] },
-    { q: "对于“说走就走的旅行”，你的态度是：", dim: "JP", ops: ["完全拒绝，没攻略的旅行简直是受罪", "可以去，但至少得把酒店先订好", "非常向往，这种未知感才叫冒险", "这就是我的生活方式，明天见！"] },
-    { q: "面对截止日期（Deadline），你的状态是：", dim: "JP", ops: ["提前好几天做完，然后反复检查修改", "按部就班推进，踩着点保质保量完成", "前期一直在摸鱼，最后一天开始冲刺", "不到最后一秒，我的大脑拒绝开机工作"] },
-    { q: "如果你的行程计划被突发状况打乱了，你会：", dim: "JP", ops: ["非常焦躁，感觉整个人都要抓狂了", "有点不爽，但会立刻寻找替代方案", "无所谓，计划赶不上变化嘛，挺有趣的", "正好不用去了，躺平万岁"] },
-
-    // XR 维度 (6题)
-    { q: "在宿舍分配房间或家务时，你会：", dim: "XR", ops: ["主动站出来主持分配，确保公平高效", "表达自己的想法，争取自己想要的权利", "听大家的意见，随便怎么分配我都能接受", "总是把好的让给别人，自己拿剩下的部分"] },
-    { q: "当团队氛围陷入尴尬的冷场时，你会：", dim: "XR", ops: ["主动讲笑话或者找话题，一定要热场", "尝试开启一个大家都能参与的话题", "观察大家的反应，等别人先开口", "默默低头，只要我不尴尬，尴尬的就是别人"] },
-    { q: "在舞台表演中，你对 C 位（中心位）的想法是：", dim: "XR", ops: ["我会主动争取，我觉得我有能力胜任", "顺其自然，给到我的部分我一定会练好", "比起 C 位，我更喜欢在旁边做辅助工作", "我更倾向于在角落，这样压力会小很多"] },
-    { q: "室友总是半夜大声打游戏，你会：", dim: "XR", ops: ["直接当面交涉：'你吵到我睡觉了，关掉'", "半开玩笑地提醒他：'大哥，再打要秃头了'", "发个信息委婉暗示，或者戴上耳塞忍着", "完全不敢说，自己憋着气默默难受"] },
-    { q: "在集体投票做决定时（比如午饭吃什么）：", dim: "XR", ops: ["我会强势推荐一家，大家跟我走就行", "我会提议几家，大家一起投票选一个", "别人说吃什么我就吃什么，我不挑食", "我会问：'你们想吃什么？'然后跟随大家"] },
-    { q: "当别人对你的建议表示反对时，你会：", dim: "XR", ops: ["据理力争，一定要用逻辑说服对方", "解释自己的初衷，尝试达成一种折中", "如果对方坚持，那我就按对方的来", "立刻道歉，觉得是不是自己说错话了"] }
+    ["沟通风格？","直接干脆","委婉保留"], // X/R (这里假设X是主导/直接，R是配合/内敛)
+    ["压力大时？","找人倾诉","自我消化"],
+    ["团队合作中？","倾向主导","倾向配合"],
+    ["遇到冲突？","正面解决","回避矛盾"],
+    ["分享欲？","很强","一般"],
+    ["氛围？","制造者","观察者"],
+    ["行动节奏？","快节奏","慢节奏"]
 ];
 
+// 定义成员的人格坐标 (0代表后一个字母，1代表前一个字母)
+// 例如：ETPJ = {E:1, T:1, J:1, X:1}
+// 为了更准，我们可以给成员设定具体的百分比分值（0~1之间）
 const members = [
     // NCT 127
     { name: "🐱 Johnny", traits: { EI: 0.9, TF: 0.8, JP: 0.4, XR: 0.9 }, desc: "自信幽默的社交达人，拥有掌控全场的气场。" },
@@ -113,35 +110,34 @@ const members = [
     { name: "🐰 Doyoung", traits: { EI: 0.4, TF: 0.9, JP: 0.95, XR: 0.7 }, desc: "逻辑满分、生活极其规律的模范生，值得信赖。" },
     { name: "🍑 Jaehyun", traits: { EI: 0.4, TF: 0.7, JP: 0.5, XR: 0.5 }, desc: "优雅且沉稳，平衡感极佳，冷静中透着理性。" },
     { name: "🐶 Jungwoo", traits: { EI: 0.8, TF: 0.2, JP: 0.4, XR: 0.4 }, desc: "共情能力超强的氛围制造者，敏感又可爱的存在。" },
-    { name: "🐯 Mark", traits: { EI: 0.6, TF: 0.5, JP: 0.9, XR: 0.6 }, desc: "极致真诚、专注且勤奋的灵魂，能感染身边所有人。" },
-    { name: "🐻 Haechan", traits: { EI: 0.9, TF: 0.7, JP: 0.3, XR: 0.8 }, desc: "机智派，社交场上的绝对主角。" },
+    { name: "🐻 Haechan", traits: { EI: 0.9, TF: 0.7, JP: 0.3, XR: 0.8 }, desc: "大脑转速极快的机智派，社交场上的绝对主角。" },
 
     // NCT DREAM
-    { name: "Fox Renjun", traits: { EI: 0.4, TF: 0.5, JP: 0.8, XR: 0.6 }, desc: "细腻且清醒，在规则与自由间寻找平衡。" },
-    { name: "🐶 Jeno", traits: { EI: 0.3, TF: 0.8, JP: 0.8, XR: 0.5 }, desc: "温和冷静的稳定器，有着可靠的逻辑感。" },
+    { name: "🦊 Renjun", traits: { EI: 0.4, TF: 0.5, JP: 0.8, XR: 0.6 }, desc: "细腻且清醒，艺术感十足，在规则与自由间寻找平衡。" },
+    { name: "🐶 Jeno", traits: { EI: 0.3, TF: 0.8, JP: 0.8, XR: 0.5 }, desc: "温和冷静的稳定器，有着像萨摩耶一样可靠的逻辑感。" },
     { name: "🐰 Jaemin", traits: { EI: 0.3, TF: 0.6, JP: 0.2, XR: 0.7 }, desc: "拥有独特边界感的自由灵魂，爱与理智并存。" },
     { name: "🐬 Chenle", traits: { EI: 0.8, TF: 0.9, JP: 0.4, XR: 0.9 }, desc: "通透且自信，逻辑思维极强，活得非常自在。" },
-    { name: "🐹 Jisung", traits: { EI: 0.1, TF: 0.4, JP: 0.3, XR: 0.2 }, desc: "含蓄的观察者，内心世界丰富且一直在成长。" },
+    { name: "🐹 Jisung", traits: { EI: 0.1, TF: 0.4, JP: 0.3, XR: 0.2 }, desc: "纯粹且含蓄的观察者，内心世界丰富且一直在成长。" },
 
     // WayV
-    { name: "🐻 Kun", traits: { EI: 0.5, TF: 0.8, JP: 0.9, XR: 0.8 }, desc: "全能靠谱的家长级人物，条理清晰，执行力满分。" },
-    { name: "🐱 Ten", traits: { EI: 0.6, TF: 0.4, JP: 0.5, XR: 0.8 }, desc: "自由不羁的艺术家，追求极致的自我表达。" },
-    { name: "🐥 Winwin", traits: { EI: 0.2, TF: 0.4, JP: 0.4, XR: 0.3 }, desc: "低调内敛，拥有强大的内心平衡力。" },
-    { name: "🦕 Xiaojun", traits: { EI: 0.4, TF: 0.2, JP: 0.7, XR: 0.5 }, desc: "感性且真挚，情感表达丰富，深情的完美主义者。" },
+    { name: "🐻 Kun", traits: { EI: 0.5, TF: 0.8, JP: 0.9, XR: 0.8 }, desc: "全能且靠谱的家长级人物，条理清晰，执行力满分。" },
+    { name: "🐱 Ten", traits: { EI: 0.6, TF: 0.4, JP: 0.5, XR: 0.8 }, desc: "自由不羁的艺术家，追求极致的自我表达与突破。" },
+    { name: "🐥 Winwin", traits: { EI: 0.2, TF: 0.4, JP: 0.4, XR: 0.3 }, desc: "温润如玉，低调内敛，拥有强大的内心平衡力。" },
+    { name: "🦕 Xiaojun", traits: { EI: 0.4, TF: 0.2, JP: 0.7, XR: 0.5 }, desc: "感性且真挚，情感表达丰富，是个深情的完美主义者。" },
     { name: "🐴 Hendery", traits: { EI: 0.7, TF: 0.6, JP: 0.3, XR: 0.6 }, desc: "脑洞大开的快乐源泉，思维跳跃且心态豁达。" },
     { name: "🐑 Yangyang", traits: { EI: 0.7, TF: 0.7, JP: 0.5, XR: 0.7 }, desc: "机灵且充满活力的冒险者，沟通直接且极具逻辑。" },
 
-    // NCT WISH (新增并精准对应你给的人格)
-    { name: "🌷 Sion", traits: { EI: 0.2, TF: 0.8, JP: 0.85, XR: 0.8 }, desc: "（ITJX）沉稳可靠的队长，有着清晰的逻辑与极强的责任感。" },
-    { name: "🐿️ Riku", traits: { EI: 0.2, TF: 0.3, JP: 0.2, XR: 0.4 }, desc: "（IFPR）内敛感性的自由灵魂，在安静中闪烁着温和的光芒。" },
-    { name: "⭐️ Yushi", traits: { EI: 0.15, TF: 0.4, JP: 0.8, XR: 0.4 }, desc: "（IFJR）细腻专注的完美主义者，有着属于自己的节奏与坚持。" },
-    { name: "🌳 Jaehee", traits: { EI: 0.85, TF: 0.35, JP: 0.2, XR: 0.6 }, desc: "（EFPX）阳光活力的氛围制造者，用感性与直觉拥抱世界。" },
-    { name: "🦭 Ryo", traits: { EI: 0.9, TF: 0.75, JP: 0.3, XR: 0.8 }, desc: "（ETPX）机灵敏锐的行动派，充满好奇心且有着极强的社交穿透力。" },
-    { name: "🥐 Sakuya", traits: { EI: 0.8, TF: 0.2, JP: 0.15, XR: 0.55 }, desc: "（EFPX）奇妙可爱的灵感捕捉者，自由自在且极具亲和力。" }
+    // NCT WISH
+    { name: "🌷 Sion", traits: { EI: 0.5, TF: 0.6, JP: 0.8, XR: 0.7 }, desc: "稳重且周全的年轻队长，在责任与活力间平衡。" },
+    { name: "🐿️ Riku", traits: { EI: 0.3, TF: 0.7, JP: 0.6, XR: 0.5 }, desc: "外冷内热，做事利落，有着超越年龄的沉稳感。" },
+    { name: "⭐️ Yushi", traits: { EI: 0.2, TF: 0.5, JP: 0.5, XR: 0.4 }, desc: "话少但专注的努力派，沉浸在自己的艺术世界中。" },
+    { name: "🌳 Jaehee", traits: { EI: 0.6, TF: 0.4, JP: 0.4, XR: 0.5 }, desc: "温暖的阳光少年，共情力强，能给人带来治愈。" },
+    { name: "🦭 Ryo", traits: { EI: 0.7, TF: 0.5, JP: 0.7, XR: 0.6 }, desc: "充满活力且执行力强，对世界充满好奇心。" },
+    { name: "🥐 Sakuya", traits: { EI: 0.4, TF: 0.4, JP: 0.2, XR: 0.4 }, desc: "拥有奇妙魅力的忙内，古灵精怪且充满灵性。" }
 ];
 
 let index = 0;
-let scores = { EI: [], TF: [], JP: [], XR: [] };
+let rawScores = { EI: 0, TF: 0, JP: 0, XR: 0 };
 
 function startTest() {
     document.getElementById("cover").classList.add("hidden");
@@ -151,18 +147,21 @@ function startTest() {
 
 function showQuestion() {
     let q = questions[index];
-    document.getElementById("question").innerText = (index + 1) + ". " + q.q;
-    let html = "";
-    const weights = [1.0, 0.7, 0.3, 0];
-    q.ops.forEach((text, i) => {
-        html += `<div class="option" onclick="answer('${q.dim}', ${weights[i]})">${text}</div>`;
-    });
+    document.getElementById("question").innerText = q[0];
+    let html = `
+        <div class="option" onclick="answer(1)">${q[1]}</div>
+        <div class="option" onclick="answer(0)">${q[2]}</div>
+    `;
     document.getElementById("options").innerHTML = html;
     document.getElementById("progressBar").style.width = (index / questions.length * 100) + "%";
 }
 
-function answer(dim, weight) {
-    scores[dim].push(weight);
+function answer(val) {
+    if (index < 7) rawScores.EI += val;
+    else if (index < 14) rawScores.TF += val;
+    else if (index < 21) rawScores.JP += val;
+    else rawScores.XR += val;
+
     index++;
     if (index < questions.length) {
         showQuestion();
@@ -175,39 +174,49 @@ function showResult() {
     document.getElementById("quiz").classList.add("hidden");
     document.getElementById("result").classList.remove("hidden");
 
-    const avg = {
-        EI: average(scores.EI),
-        TF: average(scores.TF),
-        JP: average(scores.JP),
-        XR: average(scores.XR)
+    // 计算用户百分比 (0.0 ~ 1.0)
+    const userTraits = {
+        EI: rawScores.EI / 7,
+        TF: rawScores.TF / 7,
+        JP: rawScores.JP / 7,
+        XR: rawScores.XR / 7
     };
 
     let bestMatch = null;
     let maxSimilarity = -1;
 
-    members.forEach(m => {
-        let dist = Math.sqrt(
-            Math.pow(avg.EI - m.traits.EI, 2) +
-            Math.pow(avg.TF - m.traits.TF, 2) +
-            Math.pow(avg.JP - m.traits.JP, 2) +
-            Math.pow(avg.XR - m.traits.XR, 2)
+    // 匹配算法：欧几里得距离的变体 (计算相似度)
+    members.forEach(member => {
+        let distance = Math.sqrt(
+            Math.pow(userTraits.EI - member.traits.EI, 2) +
+            Math.pow(userTraits.TF - member.traits.TF, 2) +
+            Math.pow(userTraits.JP - member.traits.JP, 2) +
+            Math.pow(userTraits.XR - member.traits.XR, 2)
         );
-        let sim = (1 - (dist / 2)) * 100;
-        if (sim > maxSimilarity) {
-            maxSimilarity = sim;
-            bestMatch = { ...m, sim: sim.toFixed(1) };
+        
+        // 将距离转换为百分比相似度 (距离越小，相似度越高)
+        // 4个维度最大距离是 2 (Math.sqrt(1^2 * 4))
+        let similarity = (1 - (distance / 2)) * 100;
+        
+        if (similarity > maxSimilarity) {
+            maxSimilarity = similarity;
+            bestMatch = { ...member, similarity: similarity.toFixed(1) };
         }
     });
 
-    document.getElementById("matchScore").innerText = bestMatch.sim + "%";
-    document.getElementById("resultName").innerText = bestMatch.name;
-    document.getElementById("resultDesc").innerText = bestMatch.desc;
-    document.getElementById("dimensionDetail").innerText = 
-        `维度参考：外向度 ${Math.round(avg.EI*100)}% | 理性度 ${Math.round(avg.TF*100)}% | 计划度 ${Math.round(avg.JP*100)}% | 主导度 ${Math.round(avg.XR*100)}%`;
-}
-
-function average(arr) {
-    return arr.reduce((a, b) => a + b, 0) / arr.length;
+    // 显示结果
+    document.getElementById("matchScore").innerText = bestMatch.similarity + "%";
+    document.getElementById("resultText").innerHTML = `<strong>${bestMatch.name}</strong><br><small>${bestMatch.desc}</small>`;
+    
+    // 显示维度详情
+    document.getElementById("dimensionDetail").innerHTML = `
+        <div class="dimension-result">
+            <span>外向 E ${Math.round(userTraits.EI*100)}%</span>
+            <span>理性 T ${Math.round(userTraits.TF*100)}%</span>
+            <span>计划 J ${Math.round(userTraits.JP*100)}%</span>
+            <span>主导 X ${Math.round(userTraits.XR*100)}%</span>
+        </div>
+    `;
 }
 </script>
 
